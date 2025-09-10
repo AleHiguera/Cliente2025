@@ -127,10 +127,12 @@ public class servidor2025 {
                 if (numero == numeroSecreto) {
                     escritor.println("¡Felicidades, lo has logrado!");
                     acertado = true;
-                } else if (numero > numeroSecreto) {
-                    escritor.println("No adivinaste, el número secreto es MENOR. Intenta de nuevo.");
-                } else {
-                    escritor.println("No adivinaste, el número secreto es MAYOR. Intenta de nuevo.");
+                } else if (intentos < 3) {
+                    if (numero > numeroSecreto) {
+                        escritor.println("No adivinaste, el número secreto es MENOR. Intenta de nuevo.");
+                    } else {
+                        escritor.println("No adivinaste, el número secreto es MAYOR. Intenta de nuevo.");
+                    }
                 }
             }
 
