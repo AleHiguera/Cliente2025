@@ -38,6 +38,11 @@ public class servidor2025 {
                     escritor.println("Escribe tu nombre de usuario:");
                     usuario = lector.readLine().trim();
 
+                    if (usuario.isEmpty() || !usuario.matches(".*[a-zA-Z].*")) {
+                        escritor.println("Nombre de usuario inválido. Debe contener al menos una letra.");
+                        continue; // vuelve al inicio del while
+                    }
+
                     if (usuarioExiste(usuario)) {
                         escritor.println("El usuario ya existe. Intenta firmar.");
                         escritor.println("Escribe tu PIN de 4 digitos para firmar:");
