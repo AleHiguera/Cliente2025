@@ -15,14 +15,18 @@ public class cliente2025 {
         while ((mensajeServidor = lector.readLine()) != null) {
             System.out.println("Servidor: " + mensajeServidor);
 
+            if (mensajeServidor.equals("No hay mensajes para ti.") ||
+                    mensajeServidor.contains("Usuarios registrados:")) {
+                mensajeServidor = lector.readLine();
+                System.out.println("Servidor: " + mensajeServidor);
+            }
             if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
                     mensajeServidor.contains("¿Quieres registrarte") ||
                     mensajeServidor.contains("Escribe 'cerrar'") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos para firmar:") ||
                     mensajeServidor.contains("Escribe el nombre del usuario") ||
-                    mensajeServidor.contains("Escribe el mensaje:") ||
-                    mensajeServidor.contains("No hay mensajes para ti.")) {
+                    mensajeServidor.contains("Escribe el mensaje:")) {
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
