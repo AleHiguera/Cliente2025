@@ -4,8 +4,8 @@ import java.net.Socket;
 import java.util.*;
 
 public class servidor2025 {
-    private static final String ARCHIVO_USUARIOS = "C://Users//al443//OneDrive/Escritorio//cuentas.txt";
-    private static final String ARCHIVO_MENSAJES = "C://Users//al443//OneDrive/Escritorio//mensajes.txt";
+    private static final String ARCHIVO_USUARIOS = "cuentas.txt";
+    private static final String ARCHIVO_MENSAJES = "mensajes.txt";
 
     public static void main(String[] args) throws IOException {
         ServerSocket server = new ServerSocket(8080);
