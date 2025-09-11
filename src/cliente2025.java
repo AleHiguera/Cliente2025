@@ -15,7 +15,6 @@ public class cliente2025 {
         while ((mensajeServidor = lector.readLine()) != null) {
             System.out.println("Servidor: " + mensajeServidor);
 
-            // Verifica si el servidor está pidiendo una respuesta específica
             if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
                     mensajeServidor.contains("¿Quieres registrarte") ||
