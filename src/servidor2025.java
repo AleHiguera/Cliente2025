@@ -5,6 +5,7 @@ import java.util.*;
 
 public class servidor2025 {
     private static final String ARCHIVO_USUARIOS = "C://Users//al443//OneDrive/Escritorio//cuentas.txt";
+    private static final String ARCHIVO_MENSAJES = "C://Users//al443//OneDrive/Escritorio//mensajes.txt";
 
     public static void main(String[] args) throws IOException {
         ServerSocket server = new ServerSocket(8080);
@@ -77,8 +78,8 @@ public class servidor2025 {
                     escritor.println("Opcion invalida.");
                 }
             } else {
-                // El usuario está dentro → puede jugar, ver lista de usuarios o cerrar sesión
-                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, o 'usuarios' para ver la lista de usuarios.");
+                // El usuario está dentro → puede jugar, ver lista de usuarios, enviar mensajes o cerrar sesión
+                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, o 'mensaje' para dejar un mensaje.");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -96,6 +97,8 @@ public class servidor2025 {
                 } else if (accion.equalsIgnoreCase("usuarios")) {
                     String listaUsuarios = obtenerListaUsuarios();
                     escritor.println("Usuarios registrados:\n" + listaUsuarios);
+                } else if (accion.equalsIgnoreCase("mensaje")) {
+                    enviarMensaje(escritor, lector, usuario); // Nuevo método para enviar mensajes
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -104,6 +107,29 @@ public class servidor2025 {
 
         cliente.close();
         server.close();
+    }
+
+    // Nuevo método para manejar el envío de mensajes
+    private static void enviarMensaje(PrintWriter escritor, BufferedReader lector, String remitente) throws IOException {
+        escritor.println("Escribe el nombre del usuario al que le dejarás un mensaje:");
+        String destinatario = lector.readLine().trim();
+
+        if (usuarioExiste(destinatario)) {
+            escritor.println("Escribe el mensaje:");
+            String mensaje = lector.readLine();
+            guardarMensaje(remitente, destinatario, mensaje);
+            escritor.println("Mensaje enviado con éxito a " + destinatario + ".");
+        } else {
+            escritor.println("El usuario " + destinatario + " no existe.");
+        }
+    }
+
+    // Nuevo método para guardar el mensaje en un archivo
+    private static void guardarMensaje(String remitente, String destinatario, String mensaje) throws IOException {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_MENSAJES, true))) {
+            bw.write(remitente + " -> " + destinatario + ": " + mensaje);
+            bw.newLine();
+        }
     }
 
     private static void jugar(PrintWriter escritor, BufferedReader lector) throws IOException {
