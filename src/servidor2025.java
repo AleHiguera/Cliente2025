@@ -39,6 +39,15 @@ public class servidor2025 {
 
                     if (usuarioExiste(usuario)) {
                         escritor.println("El usuario ya existe. Intenta firmar.");
+                        escritor.println("Escribe tu PIN de 4 digitos para firmar:");
+                        String pin = lector.readLine().trim();
+
+                        if (validarUsuario(usuario, pin)) {
+                            escritor.println("Firma exitosa. ¡Bienvenido " + usuario + "!");
+                            sesionActiva = true;
+                        } else {
+                            escritor.println("Usuario o PIN incorrecto.");
+                        }
                     } else {
                         escritor.println("Escribe tu PIN de 4 digitos:");
                         String pin = lector.readLine().trim();
@@ -68,8 +77,8 @@ public class servidor2025 {
                     escritor.println("Opcion invalida.");
                 }
             } else {
-                // El usuario está dentro → puede jugar o cerrar sesión
-                escritor.println("Escribe 'cerrar' para cerrar sesión o 'jugar' para comenzar el juego.");
+                // El usuario está dentro → puede jugar, ver lista de usuarios o cerrar sesión
+                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, o 'usuarios' para ver la lista de usuarios.");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -84,6 +93,9 @@ public class servidor2025 {
                     sesionActiva = false;
                 } else if (accion.equalsIgnoreCase("jugar")) {
                     jugar(escritor, lector);
+                } else if (accion.equalsIgnoreCase("usuarios")) {
+                    String listaUsuarios = obtenerListaUsuarios();
+                    escritor.println("Usuarios registrados:\n" + listaUsuarios);
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -147,6 +159,25 @@ public class servidor2025 {
                 escritor.println("Juego terminado. Escribe 'cerrar' para salir de tu sesión.");
             }
         }
+    }
+
+    private static String obtenerListaUsuarios() throws IOException {
+        StringBuilder lista = new StringBuilder();
+        File archivo = new File(ARCHIVO_USUARIOS);
+        if (!archivo.exists()) {
+            return "No hay usuarios registrados.";
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split(":");
+                if (partes.length >= 1) {
+                    lista.append(partes[0].trim()).append("\n");
+                }
+            }
+        }
+        return lista.toString();
     }
 
     private static boolean usuarioExiste(String usuario) throws IOException {
