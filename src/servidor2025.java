@@ -79,7 +79,7 @@ public class servidor2025 {
                 }
             } else {
                 // El usuario está dentro → puede jugar, ver lista de usuarios, enviar mensajes o cerrar sesión
-                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, o 'mensaje' para dejar un mensaje.");
+                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, o 'leer' para ver tus mensajes.");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -98,7 +98,9 @@ public class servidor2025 {
                     String listaUsuarios = obtenerListaUsuarios();
                     escritor.println("Usuarios registrados:\n" + listaUsuarios);
                 } else if (accion.equalsIgnoreCase("mensaje")) {
-                    enviarMensaje(escritor, lector, usuario); // Nuevo método para enviar mensajes
+                    enviarMensaje(escritor, lector, usuario);
+                } else if (accion.equalsIgnoreCase("leer")) {
+                    leerMensajes(escritor, usuario); // Nuevo método para leer mensajes
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -109,7 +111,34 @@ public class servidor2025 {
         server.close();
     }
 
-    // Nuevo método para manejar el envío de mensajes
+    // Nuevo método para leer mensajes
+    private static void leerMensajes(PrintWriter escritor, String usuario) throws IOException {
+        File archivo = new File(ARCHIVO_MENSAJES);
+        if (!archivo.exists()) {
+            escritor.println("No hay mensajes para ti.");
+            return;
+        }
+
+        List<String> mensajesParaUsuario = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                if (linea.contains(" -> " + usuario + ":")) {
+                    mensajesParaUsuario.add(linea);
+                }
+            }
+        }
+
+        if (mensajesParaUsuario.isEmpty()) {
+            escritor.println("No hay mensajes para ti.");
+        } else {
+            escritor.println("Mensajes para ti:");
+            for (String mensaje : mensajesParaUsuario) {
+                escritor.println(mensaje);
+            }
+        }
+    }
+
     private static void enviarMensaje(PrintWriter escritor, BufferedReader lector, String remitente) throws IOException {
         escritor.println("Escribe el nombre del usuario al que le dejarás un mensaje:");
         String destinatario = lector.readLine().trim();
@@ -124,7 +153,6 @@ public class servidor2025 {
         }
     }
 
-    // Nuevo método para guardar el mensaje en un archivo
     private static void guardarMensaje(String remitente, String destinatario, String mensaje) throws IOException {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_MENSAJES, true))) {
             bw.write(remitente + " -> " + destinatario + ": " + mensaje);
