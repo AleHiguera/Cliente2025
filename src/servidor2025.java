@@ -210,7 +210,7 @@ public class servidor2025 {
             String respuesta = lector.readLine();
             if (respuesta == null || !respuesta.trim().equalsIgnoreCase("si")) {
                 seguirJugando = false;
-                escritor.println("Juego terminado. Escribe 'cerrar' para salir de tu sesión.");
+                escritor.println("Juego terminado.");
             }
         }
     }
