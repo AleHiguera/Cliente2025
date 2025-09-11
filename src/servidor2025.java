@@ -28,7 +28,7 @@ public class servidor2025 {
                     break;
                 }
 
-                opcion = opcion.trim(); // limpia espacios
+                opcion = opcion.trim();
                 if (opcion.equalsIgnoreCase("salir")) {
                     escritor.println("Cerrando servidor. ¡Adiós!");
                     break;
@@ -78,7 +78,7 @@ public class servidor2025 {
                     escritor.println("Opcion invalida.");
                 }
             } else {
-                // El usuario está dentro → puede jugar, ver lista de usuarios, enviar mensajes o cerrar sesión
+
                 escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, o 'leer' para ver tus mensajes.");
                 String accion = lector.readLine();
 
@@ -87,7 +87,7 @@ public class servidor2025 {
                     break;
                 }
 
-                accion = accion.trim(); // limpia entrada
+                accion = accion.trim();
                 if (accion.equalsIgnoreCase("cerrar")) {
                     escritor.println("Sesión cerrada de " + usuario + ".");
                     usuario = "";
@@ -100,7 +100,7 @@ public class servidor2025 {
                 } else if (accion.equalsIgnoreCase("mensaje")) {
                     enviarMensaje(escritor, lector, usuario);
                 } else if (accion.equalsIgnoreCase("leer")) {
-                    leerMensajes(escritor, usuario); // Nuevo método para leer mensajes
+                    leerMensajes(escritor, usuario);
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -111,7 +111,7 @@ public class servidor2025 {
         server.close();
     }
 
-    // Nuevo método para leer mensajes
+    // leer mensajes
     private static void leerMensajes(PrintWriter escritor, String usuario) throws IOException {
         File archivo = new File(ARCHIVO_MENSAJES);
         if (!archivo.exists()) {
