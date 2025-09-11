@@ -20,7 +20,9 @@ public class cliente2025 {
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
                     mensajeServidor.contains("¿Quieres registrarte") ||
                     mensajeServidor.contains("Escribe 'cerrar'") ||
-                    mensajeServidor.contains("Escribe tu PIN de 4 digitos para firmar:")) {
+                    mensajeServidor.contains("Escribe tu PIN de 4 digitos para firmar:") ||
+                    mensajeServidor.contains("Escribe el nombre del usuario") ||
+                    mensajeServidor.contains("Escribe el mensaje:")) { // Nueva condición para el mensaje
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
