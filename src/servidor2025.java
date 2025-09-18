@@ -84,7 +84,7 @@ public class servidor2025 {
                 }
             } else {
 
-                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, 'leer' para ver tus mensajes, o 'eliminar' para borrar mensajes.");
+                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, 'leer' para ver tus mensajes, 'eliminar' para borrar mensajes, o 'bcuenta' para borrar tu usuario.");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -107,7 +107,13 @@ public class servidor2025 {
                 } else if (accion.equalsIgnoreCase("leer")) {
                     leerMensajes(escritor, usuario);
                 } else if (accion.equalsIgnoreCase("eliminar")) {
-                    eliminarMensajes(escritor, lector, usuario); // NUEVA LLAMADA
+                    eliminarMensajes(escritor, lector, usuario);
+                } else if (accion.equalsIgnoreCase("bcuenta")) { // NUEVO COMANDO
+                    boolean borradoExitoso = borrarCuenta(escritor, lector, usuario);
+                    if (borradoExitoso) {
+                        usuario = "";
+                        sesionActiva = false;
+                    }
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -233,6 +239,108 @@ public class servidor2025 {
                 bw.newLine();
             }
         }
+    }
+
+    // NUEVO MÉTODO PARA BORRAR CUENTA
+    private static boolean borrarCuenta(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
+        escritor.println("Estás seguro de borrar tu usuario '" + usuario + "'? Esta acción es permanente (S/N).");
+        String confirmacion = lector.readLine().trim();
+
+        if (confirmacion.equalsIgnoreCase("S")) {
+            // 1. Borrar usuario de cuentas.txt
+            if (eliminarUsuarioDeArchivo(usuario)) {
+                escritor.println("Usuario '" + usuario + "' eliminado de cuentas.txt.");
+            } else {
+                escritor.println("Advertencia: No se encontró al usuario en cuentas.txt para eliminar.");
+            }
+
+            // 2. Borrar mensajes (enviados y recibidos) de mensajes.txt
+            if (eliminarMensajesDeUsuario(usuario)) {
+                escritor.println("Todos los mensajes asociados a '" + usuario + "' han sido eliminados de mensajes.txt.");
+            } else {
+                escritor.println("Advertencia: No había mensajes asociados a '" + usuario + "' para eliminar.");
+            }
+
+            escritor.println("Tu cuenta ha sido eliminada exitosamente. Sesión cerrada.");
+            return true; // Éxito en la eliminación
+        } else {
+            escritor.println("Borrado de cuenta cancelado. Volviendo al menú principal.");
+            return false; // Cancelado
+        }
+    }
+
+    // NUEVO MÉTODO AUXILIAR PARA ELIMINAR DEL ARCHIVO DE CUENTAS
+    private static boolean eliminarUsuarioDeArchivo(String usuario) throws IOException {
+        File archivo = new File(ARCHIVO_USUARIOS);
+        if (!archivo.exists()) return false;
+
+        List<String> lineasRestantes = new ArrayList<>();
+        boolean usuarioEncontrado = false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split(":");
+                // Si la línea NO es el usuario a borrar, se mantiene.
+                if (partes.length >= 1 && partes[0].trim().equalsIgnoreCase(usuario)) {
+                    usuarioEncontrado = true;
+                    // Esta línea se omite (se elimina)
+                } else {
+                    lineasRestantes.add(linea); // Esta línea se conserva
+                }
+            }
+        }
+
+        if (usuarioEncontrado) {
+            // Reescribe el archivo solo con las líneas restantes
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_USUARIOS, false))) {
+                for (String linea : lineasRestantes) {
+                    bw.write(linea);
+                    bw.newLine();
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // NUEVO MÉTODO AUXILIAR PARA ELIMINAR MENSAJES DEL USUARIO
+    private static boolean eliminarMensajesDeUsuario(String usuario) throws IOException {
+        File archivo = new File(ARCHIVO_MENSAJES);
+        if (!archivo.exists()) return false;
+
+        List<String> lineasRestantes = new ArrayList<>();
+        boolean mensajesEliminados = false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                // Formato: Remitente -> Destinatario: Mensaje
+                String[] partes = linea.split(" -> ");
+
+                if (partes.length == 2) {
+                    String remitente = partes[0].trim();
+                    String resto = partes[1];
+                    String destinatario = resto.substring(0, resto.indexOf(":")).trim();
+
+                    // Comprueba si el usuario es el remitente O el destinatario
+                    if (remitente.equalsIgnoreCase(usuario) || destinatario.equalsIgnoreCase(usuario)) {
+                        mensajesEliminados = true;
+                        // Se omite esta línea (se elimina el mensaje)
+                    } else {
+                        lineasRestantes.add(linea); // Se conserva el mensaje
+                    }
+                } else {
+                    lineasRestantes.add(linea); // Conserva líneas mal formadas o de otro formato
+                }
+            }
+        }
+
+        if (mensajesEliminados) {
+
+            reescribirMensajes(lineasRestantes);
+        }
+        return mensajesEliminados;
     }
 
 
