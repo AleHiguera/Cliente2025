@@ -118,7 +118,7 @@ public class servidor2025 {
         server.close();
     }
 
-    // Método agregado: eliminarMensajes
+
     private static void eliminarMensajes(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
         escritor.println("¿Quieres eliminar mensajes Recibidos (R) o Enviados (E)?");
         String tipoEliminar = lector.readLine().trim();
@@ -132,11 +132,10 @@ public class servidor2025 {
                 return;
             }
 
-            // 'R'ecibidos: el usuario actual es el destinatario.
-            // 'E'nviados: el usuario actual es el remitente.
+
             boolean buscarRecibidos = tipoEliminar.equalsIgnoreCase("R");
 
-            // 1. Obtener los mensajes relevantes
+
             List<String> mensajesRelevantes = new ArrayList<>();
             List<String> todasLasLineas = new ArrayList<>();
             int contador = 1;
@@ -152,7 +151,7 @@ public class servidor2025 {
                 while ((linea = br.readLine()) != null) {
                     todasLasLineas.add(linea);
 
-                    // Formato: Remitente -> Destinatario: Mensaje
+
                     String[] partes = linea.split(" -> ");
                     if (partes.length == 2) {
                         String remitente = partes[0].trim();
@@ -192,7 +191,7 @@ public class servidor2025 {
                 return;
             }
 
-            // 2. Pedir qué mensaje eliminar
+
             escritor.println("Escribe el número del mensaje que deseas eliminar de esta lista, o 'cancelar':");
             String seleccionStr = lector.readLine().trim();
 
@@ -206,10 +205,10 @@ public class servidor2025 {
                 if (seleccion < 1 || seleccion >= contador) {
                     escritor.println("Número de mensaje inválido. Elige uno que sí se pueda.");
                 } else {
-                    // El mensaje a eliminar es el de la posición (seleccion - 1) en la lista de relevantes.
+
                     String mensajeAEliminar = mensajesRelevantes.get(seleccion - 1);
 
-                    // 3. Eliminar y reescribir el archivo
+
                     boolean eliminado = todasLasLineas.remove(mensajeAEliminar);
                     if (eliminado) {
                         reescribirMensajes(todasLasLineas);
@@ -226,9 +225,9 @@ public class servidor2025 {
         }
     }
 
-    // Método agregado: reescribirMensajes
+
     private static void reescribirMensajes(List<String> lineas) throws IOException {
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_MENSAJES, false))) { // false para sobrescribir
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_MENSAJES, false))) {
             for (String linea : lineas) {
                 bw.write(linea);
                 bw.newLine();
@@ -236,7 +235,7 @@ public class servidor2025 {
         }
     }
 
-    // leer mensajes
+
     private static void leerMensajes(PrintWriter escritor, String usuario) throws IOException {
         File archivo = new File(ARCHIVO_MENSAJES);
         if (!archivo.exists()) {
