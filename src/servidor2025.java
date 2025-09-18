@@ -161,15 +161,15 @@ public class servidor2025 {
                     String[] partes = linea.split(" -> ");
                     if (partes.length == 2) {
                         String remitente = partes[0].trim();
-                        String resto = partes[1]; // Contiene "Destinatario: Mensaje"
+                        String resto = partes[1];
                         String destinatario = resto.substring(0, resto.indexOf(":")).trim();
 
                         boolean esMensajeRelevante = false;
-                        if (buscarRecibidos) { // Buscando RECIBIDOS (yo soy el DESTINATARIO, el otro es el REMITENTE)
+                        if (buscarRecibidos) {
                             if (destinatario.equalsIgnoreCase(usuario) && remitente.equalsIgnoreCase(otroUsuario)) {
                                 esMensajeRelevante = true;
                             }
-                        } else { // Buscando ENVIADOS (yo soy el REMITENTE, el otro es el DESTINATARIO)
+                        } else {
                             if (remitente.equalsIgnoreCase(usuario) && destinatario.equalsIgnoreCase(otroUsuario)) {
                                 esMensajeRelevante = true;
                             }
@@ -177,7 +177,7 @@ public class servidor2025 {
 
                         if (esMensajeRelevante) {
                             mensajesRelevantes.add(linea);
-                            // Muestra el mensaje con un número para la selección
+
                             String textoMensaje = resto.substring(resto.indexOf(":") + 1).trim();
                             String display;
                             if (tipoEliminar.equalsIgnoreCase("R")) {
@@ -241,20 +241,20 @@ public class servidor2025 {
         }
     }
 
-    // NUEVO MÉTODO PARA BORRAR CUENTA
+
     private static boolean borrarCuenta(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
         escritor.println("Estás seguro de borrar tu usuario '" + usuario + "'? Esta acción es permanente (S/N).");
         String confirmacion = lector.readLine().trim();
 
         if (confirmacion.equalsIgnoreCase("S")) {
-            // 1. Borrar usuario de cuentas.txt
+
             if (eliminarUsuarioDeArchivo(usuario)) {
                 escritor.println("Usuario '" + usuario + "' eliminado de cuentas.txt.");
             } else {
                 escritor.println("Advertencia: No se encontró al usuario en cuentas.txt para eliminar.");
             }
 
-            // 2. Borrar mensajes (enviados y recibidos) de mensajes.txt
+
             if (eliminarMensajesDeUsuario(usuario)) {
                 escritor.println("Todos los mensajes asociados a '" + usuario + "' han sido eliminados de mensajes.txt.");
             } else {
@@ -262,14 +262,14 @@ public class servidor2025 {
             }
 
             escritor.println("Tu cuenta ha sido eliminada exitosamente. Sesión cerrada.");
-            return true; // Éxito en la eliminación
+            return true;
         } else {
             escritor.println("Borrado de cuenta cancelado. Volviendo al menú principal.");
-            return false; // Cancelado
+            return false;
         }
     }
 
-    // NUEVO MÉTODO AUXILIAR PARA ELIMINAR DEL ARCHIVO DE CUENTAS
+
     private static boolean eliminarUsuarioDeArchivo(String usuario) throws IOException {
         File archivo = new File(ARCHIVO_USUARIOS);
         if (!archivo.exists()) return false;
@@ -281,18 +281,18 @@ public class servidor2025 {
             String linea;
             while ((linea = br.readLine()) != null) {
                 String[] partes = linea.split(":");
-                // Si la línea NO es el usuario a borrar, se mantiene.
+
                 if (partes.length >= 1 && partes[0].trim().equalsIgnoreCase(usuario)) {
                     usuarioEncontrado = true;
-                    // Esta línea se omite (se elimina)
+
                 } else {
-                    lineasRestantes.add(linea); // Esta línea se conserva
+                    lineasRestantes.add(linea);
                 }
             }
         }
 
         if (usuarioEncontrado) {
-            // Reescribe el archivo solo con las líneas restantes
+
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_USUARIOS, false))) {
                 for (String linea : lineasRestantes) {
                     bw.write(linea);
@@ -304,7 +304,7 @@ public class servidor2025 {
         return false;
     }
 
-    // NUEVO MÉTODO AUXILIAR PARA ELIMINAR MENSAJES DEL USUARIO
+
     private static boolean eliminarMensajesDeUsuario(String usuario) throws IOException {
         File archivo = new File(ARCHIVO_MENSAJES);
         if (!archivo.exists()) return false;
@@ -315,7 +315,7 @@ public class servidor2025 {
         try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
             String linea;
             while ((linea = br.readLine()) != null) {
-                // Formato: Remitente -> Destinatario: Mensaje
+
                 String[] partes = linea.split(" -> ");
 
                 if (partes.length == 2) {
@@ -323,15 +323,15 @@ public class servidor2025 {
                     String resto = partes[1];
                     String destinatario = resto.substring(0, resto.indexOf(":")).trim();
 
-                    // Comprueba si el usuario es el remitente O el destinatario
+
                     if (remitente.equalsIgnoreCase(usuario) || destinatario.equalsIgnoreCase(usuario)) {
                         mensajesEliminados = true;
                         // Se omite esta línea (se elimina el mensaje)
                     } else {
-                        lineasRestantes.add(linea); // Se conserva el mensaje
+                        lineasRestantes.add(linea);
                     }
                 } else {
-                    lineasRestantes.add(linea); // Conserva líneas mal formadas o de otro formato
+                    lineasRestantes.add(linea);
                 }
             }
         }
