@@ -84,7 +84,7 @@ public class servidor2025 {
                 }
             } else {
 
-                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, o 'leer' para ver tus mensajes.");
+                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, 'leer' para ver tus mensajes, o 'eliminar' para borrar mensajes.");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -106,6 +106,8 @@ public class servidor2025 {
                     enviarMensaje(escritor, lector, usuario);
                 } else if (accion.equalsIgnoreCase("leer")) {
                     leerMensajes(escritor, usuario);
+                } else if (accion.equalsIgnoreCase("eliminar")) {
+                    eliminarMensajes(escritor, lector, usuario); // NUEVA LLAMADA
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -114,6 +116,124 @@ public class servidor2025 {
 
         cliente.close();
         server.close();
+    }
+
+    // Método agregado: eliminarMensajes
+    private static void eliminarMensajes(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
+        escritor.println("¿Quieres eliminar mensajes Recibidos (R) o Enviados (E)?");
+        String tipoEliminar = lector.readLine().trim();
+
+        if (tipoEliminar.equalsIgnoreCase("R") || tipoEliminar.equalsIgnoreCase("E")) {
+            escritor.println("Escribe el nombre del usuario:");
+            String otroUsuario = lector.readLine().trim();
+
+            if (!usuarioExiste(otroUsuario)) {
+                escritor.println("El usuario " + otroUsuario + " no existe.");
+                return;
+            }
+
+            // 'R'ecibidos: el usuario actual es el destinatario.
+            // 'E'nviados: el usuario actual es el remitente.
+            boolean buscarRecibidos = tipoEliminar.equalsIgnoreCase("R");
+
+            // 1. Obtener los mensajes relevantes
+            List<String> mensajesRelevantes = new ArrayList<>();
+            List<String> todasLasLineas = new ArrayList<>();
+            int contador = 1;
+
+            File archivo = new File(ARCHIVO_MENSAJES);
+            if (!archivo.exists()) {
+                escritor.println("Este chat está vacío.");
+                return;
+            }
+
+            try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+                String linea;
+                while ((linea = br.readLine()) != null) {
+                    todasLasLineas.add(linea);
+
+                    // Formato: Remitente -> Destinatario: Mensaje
+                    String[] partes = linea.split(" -> ");
+                    if (partes.length == 2) {
+                        String remitente = partes[0].trim();
+                        String resto = partes[1]; // Contiene "Destinatario: Mensaje"
+                        String destinatario = resto.substring(0, resto.indexOf(":")).trim();
+
+                        boolean esMensajeRelevante = false;
+                        if (buscarRecibidos) { // Buscando RECIBIDOS (yo soy el DESTINATARIO, el otro es el REMITENTE)
+                            if (destinatario.equalsIgnoreCase(usuario) && remitente.equalsIgnoreCase(otroUsuario)) {
+                                esMensajeRelevante = true;
+                            }
+                        } else { // Buscando ENVIADOS (yo soy el REMITENTE, el otro es el DESTINATARIO)
+                            if (remitente.equalsIgnoreCase(usuario) && destinatario.equalsIgnoreCase(otroUsuario)) {
+                                esMensajeRelevante = true;
+                            }
+                        }
+
+                        if (esMensajeRelevante) {
+                            mensajesRelevantes.add(linea);
+                            // Muestra el mensaje con un número para la selección
+                            String textoMensaje = resto.substring(resto.indexOf(":") + 1).trim();
+                            String display;
+                            if (tipoEliminar.equalsIgnoreCase("R")) {
+                                display = "(" + contador + ") De " + remitente + ": " + textoMensaje;
+                            } else {
+                                display = "(" + contador + ") Para " + destinatario + ": " + textoMensaje;
+                            }
+                            escritor.println(display);
+                            contador++;
+                        }
+                    }
+                }
+            }
+
+            if (mensajesRelevantes.isEmpty()) {
+                escritor.println("Este chat está vacío.");
+                return;
+            }
+
+            // 2. Pedir qué mensaje eliminar
+            escritor.println("Escribe el número del mensaje que deseas eliminar de esta lista, o 'cancelar':");
+            String seleccionStr = lector.readLine().trim();
+
+            if (seleccionStr.equalsIgnoreCase("cancelar")) {
+                escritor.println("Eliminación cancelada.");
+                return;
+            }
+
+            try {
+                int seleccion = Integer.parseInt(seleccionStr);
+                if (seleccion < 1 || seleccion >= contador) {
+                    escritor.println("Número de mensaje inválido. Elige uno que sí se pueda.");
+                } else {
+                    // El mensaje a eliminar es el de la posición (seleccion - 1) en la lista de relevantes.
+                    String mensajeAEliminar = mensajesRelevantes.get(seleccion - 1);
+
+                    // 3. Eliminar y reescribir el archivo
+                    boolean eliminado = todasLasLineas.remove(mensajeAEliminar);
+                    if (eliminado) {
+                        reescribirMensajes(todasLasLineas);
+                        escritor.println("Mensaje eliminado con éxito.");
+                    } else {
+                        escritor.println("Error interno: No se pudo encontrar el mensaje original para eliminar.");
+                    }
+                }
+            } catch (NumberFormatException e) {
+                escritor.println("Entrada inválida. Debes escribir un número o 'cancelar'.");
+            }
+        } else {
+            escritor.println("Opción inválida. Debes elegir 'R' (Recibidos) o 'E' (Enviados).");
+        }
+    }
+
+    // Método agregado: reescribirMensajes
+    private static void reescribirMensajes(List<String> lineas) throws IOException {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_MENSAJES, false))) { // false para sobrescribir
+            for (String linea : lineas) {
+                bw.write(linea);
+                bw.newLine();
+            }
+        }
     }
 
     // leer mensajes
