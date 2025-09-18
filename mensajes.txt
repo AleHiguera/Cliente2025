@@ -1,1 +1,7 @@
-elisa -> aaale: Buenos dias 
+elisa -> aaale: Buenos dias
+elisa -> alehi: como estas¡
+elisa -> aaale: que tal
+aaale -> elisa: bien y tu?
+aaale -> alehi: holaaa
+alehi -> elisa: holaaa
+alehi -> aaale: que show
