@@ -30,7 +30,8 @@ public class cliente2025 {
                     mensajeServidor.contains("Escribe tu intento #") ||
                     mensajeServidor.contains("¿Quieres jugar otra vez?") ||
                     mensajeServidor.contains("¿Quieres eliminar mensajes") ||
-                    mensajeServidor.contains("Escribe el número del mensaje")) {
+                    mensajeServidor.contains("Escribe el número del mensaje") ||
+                    mensajeServidor.contains("Estás seguro de borrar tu usuario")) {
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
