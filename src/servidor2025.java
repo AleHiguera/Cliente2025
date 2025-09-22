@@ -6,6 +6,8 @@ import java.util.*;
 public class servidor2025 {
     private static final String ARCHIVO_USUARIOS = "cuentas.txt";
     private static final String ARCHIVO_MENSAJES = "mensajes.txt";
+    // Constante para definir el número de mensajes por página.
+    private static final int MENSAJES_POR_PAGINA = 10;
 
     public static void main(String[] args) throws IOException {
         ServerSocket server = new ServerSocket(8080);
@@ -40,7 +42,7 @@ public class servidor2025 {
 
                     if (usuario.isEmpty() || !usuario.matches(".*[a-zA-Z].*")) {
                         escritor.println("Nombre de usuario inválido. Debe contener al menos una letra.");
-                        continue; // vuelve al inicio del while
+                        continue;
                     }
 
                     if (usuarioExiste(usuario)) {
@@ -108,7 +110,7 @@ public class servidor2025 {
                     leerMensajes(escritor, usuario);
                 } else if (accion.equalsIgnoreCase("eliminar")) {
                     eliminarMensajes(escritor, lector, usuario);
-                } else if (accion.equalsIgnoreCase("bcuenta")) { // NUEVO COMANDO
+                } else if (accion.equalsIgnoreCase("bcuenta")) {
                     boolean borradoExitoso = borrarCuenta(escritor, lector, usuario);
                     if (borradoExitoso) {
                         usuario = "";
@@ -138,13 +140,10 @@ public class servidor2025 {
                 return;
             }
 
-
             boolean buscarRecibidos = tipoEliminar.equalsIgnoreCase("R");
-
 
             List<String> mensajesRelevantes = new ArrayList<>();
             List<String> todasLasLineas = new ArrayList<>();
-            int contador = 1;
 
             File archivo = new File(ARCHIVO_MENSAJES);
             if (!archivo.exists()) {
@@ -156,7 +155,6 @@ public class servidor2025 {
                 String linea;
                 while ((linea = br.readLine()) != null) {
                     todasLasLineas.add(linea);
-
 
                     String[] partes = linea.split(" -> ");
                     if (partes.length == 2) {
@@ -177,16 +175,6 @@ public class servidor2025 {
 
                         if (esMensajeRelevante) {
                             mensajesRelevantes.add(linea);
-
-                            String textoMensaje = resto.substring(resto.indexOf(":") + 1).trim();
-                            String display;
-                            if (tipoEliminar.equalsIgnoreCase("R")) {
-                                display = "(" + contador + ") De " + remitente + ": " + textoMensaje;
-                            } else {
-                                display = "(" + contador + ") Para " + destinatario + ": " + textoMensaje;
-                            }
-                            escritor.println(display);
-                            contador++;
                         }
                     }
                 }
@@ -197,35 +185,75 @@ public class servidor2025 {
                 return;
             }
 
+            // --- INICIO DE LA LÓGICA DE PAGINACIÓN ---
+            int paginaActual = 1;
+            int totalPaginas = (int) Math.ceil((double) mensajesRelevantes.size() / MENSAJES_POR_PAGINA);
 
-            escritor.println("Escribe el número del mensaje que deseas eliminar de esta lista, o 'cancelar':");
-            String seleccionStr = lector.readLine().trim();
+            while (true) {
+                escritor.println("--- Pagina " + paginaActual + " de " + totalPaginas + " ---");
+                int inicio = (paginaActual - 1) * MENSAJES_POR_PAGINA;
+                int fin = Math.min(inicio + MENSAJES_POR_PAGINA, mensajesRelevantes.size());
 
-            if (seleccionStr.equalsIgnoreCase("cancelar")) {
-                escritor.println("Eliminación cancelada.");
-                return;
-            }
-
-            try {
-                int seleccion = Integer.parseInt(seleccionStr);
-                if (seleccion < 1 || seleccion >= contador) {
-                    escritor.println("Número de mensaje inválido. Elige uno que sí se pueda.");
-                } else {
-
-                    String mensajeAEliminar = mensajesRelevantes.get(seleccion - 1);
-
-
-                    boolean eliminado = todasLasLineas.remove(mensajeAEliminar);
-                    if (eliminado) {
-                        reescribirMensajes(todasLasLineas);
-                        escritor.println("Mensaje eliminado con éxito.");
+                for (int i = inicio; i < fin; i++) {
+                    String lineaMensaje = mensajesRelevantes.get(i);
+                    String[] partes = lineaMensaje.split(" -> ");
+                    String resto = partes[1];
+                    String textoMensaje = resto.substring(resto.indexOf(":") + 1).trim();
+                    String display;
+                    if (tipoEliminar.equalsIgnoreCase("R")) {
+                        display = "(" + (i + 1) + ") De " + partes[0].trim() + ": " + textoMensaje;
                     } else {
-                        escritor.println("Error interno: No se pudo encontrar el mensaje original para eliminar.");
+                        String destinatario = resto.substring(0, resto.indexOf(":")).trim();
+                        display = "(" + (i + 1) + ") Para " + destinatario + ": " + textoMensaje;
                     }
+                    escritor.println(display);
                 }
-            } catch (NumberFormatException e) {
-                escritor.println("Entrada inválida. Debes escribir un número o 'cancelar'.");
+
+                String opciones = "Opciones: 'eliminar <numero>' | 'cancelar'";
+                if (paginaActual < totalPaginas) {
+                    opciones += " | 'siguiente'";
+                }
+                if (paginaActual > 1) {
+                    opciones += " | 'anterior'";
+                }
+
+                escritor.println(opciones);
+
+                String accion = lector.readLine().trim();
+
+                if (accion.equalsIgnoreCase("cancelar")) {
+                    escritor.println("Eliminación cancelada.");
+                    break;
+                } else if (accion.equalsIgnoreCase("siguiente") && paginaActual < totalPaginas) {
+                    paginaActual++;
+                } else if (accion.equalsIgnoreCase("anterior") && paginaActual > 1) {
+                    paginaActual--;
+                } else if (accion.startsWith("eliminar ")) {
+                    try {
+                        String[] partesAccion = accion.split(" ");
+                        int seleccion = Integer.parseInt(partesAccion[1]);
+
+                        if (seleccion < 1 || seleccion > mensajesRelevantes.size()) {
+                            escritor.println("Número de mensaje inválido. Intenta de nuevo.");
+                        } else {
+                            String mensajeAEliminar = mensajesRelevantes.get(seleccion - 1);
+                            boolean eliminado = todasLasLineas.remove(mensajeAEliminar);
+                            if (eliminado) {
+                                reescribirMensajes(todasLasLineas);
+                                escritor.println("Mensaje " + seleccion + " eliminado con éxito.");
+                            } else {
+                                escritor.println("Error interno: No se pudo encontrar el mensaje original para eliminar.");
+                            }
+                            break; // Sale del bucle de paginación
+                        }
+                    } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+                        escritor.println("Entrada inválida. Usa el formato 'eliminar <numero>'.");
+                    }
+                } else {
+                    escritor.println("Comando no reconocido. Vuelve a intentarlo.");
+                }
             }
+            // --- FIN DE LA LÓGICA DE PAGINACIÓN ---
         } else {
             escritor.println("Opción inválida. Debes elegir 'R' (Recibidos) o 'E' (Enviados).");
         }
@@ -326,7 +354,7 @@ public class servidor2025 {
 
                     if (remitente.equalsIgnoreCase(usuario) || destinatario.equalsIgnoreCase(usuario)) {
                         mensajesEliminados = true;
-                        // Se omite esta línea (se elimina el mensaje)
+
                     } else {
                         lineasRestantes.add(linea);
                     }
