@@ -6,7 +6,7 @@ import java.util.*;
 public class servidor2025 {
     private static final String ARCHIVO_USUARIOS = "cuentas.txt";
     private static final String ARCHIVO_MENSAJES = "mensajes.txt";
-    // Constante para definir el número de mensajes por página.
+
     private static final int MENSAJES_POR_PAGINA = 10;
 
     public static void main(String[] args) throws IOException {
@@ -185,7 +185,7 @@ public class servidor2025 {
                 return;
             }
 
-            // --- INICIO DE LA LÓGICA DE PAGINACIÓN ---
+
             int paginaActual = 1;
             int totalPaginas = (int) Math.ceil((double) mensajesRelevantes.size() / MENSAJES_POR_PAGINA);
 
@@ -244,7 +244,7 @@ public class servidor2025 {
                             } else {
                                 escritor.println("Error interno: No se pudo encontrar el mensaje original para eliminar.");
                             }
-                            break; // Sale del bucle de paginación
+                            break;
                         }
                     } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                         escritor.println("Entrada inválida. Usa el formato 'eliminar <numero>'.");
@@ -253,7 +253,7 @@ public class servidor2025 {
                     escritor.println("Comando no reconocido. Vuelve a intentarlo.");
                 }
             }
-            // --- FIN DE LA LÓGICA DE PAGINACIÓN ---
+
         } else {
             escritor.println("Opción inválida. Debes elegir 'R' (Recibidos) o 'E' (Enviados).");
         }
