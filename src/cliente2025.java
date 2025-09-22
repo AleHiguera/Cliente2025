@@ -17,9 +17,9 @@ public class cliente2025 {
 
             if (mensajeServidor.equals("No hay mensajes para ti.") ||
                     mensajeServidor.contains("Usuarios registrados:") ||
-                    mensajeServidor.contains("Opciones:") || // NUEVO: Para la paginación
-                    mensajeServidor.contains("--- Pagina ")) { // NUEVO: Para la paginación
-                // No se hace nada, el bucle continuará para mostrar la siguiente línea
+                    mensajeServidor.contains("Opciones:") ||
+                    mensajeServidor.contains("--- Pagina ")) {
+
             }
             if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
