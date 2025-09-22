@@ -5,3 +5,13 @@ aaale -> elisa: bien y tu?
 aaale -> alehi: holaaa
 alehi -> elisa: holaaa
 alehi -> aaale: que show
+elisa -> aaale: numero 1
+elisa -> aaale: numero 2
+elisa -> aaale: numero 3
+elisa -> aaale: numer 4
+elisa -> aaale: numero 5
+elisa -> aaale: numero 6
+elisa -> aaale: numero 7
+elisa -> aaale: num8
+elisa -> aaale: num 9
+elisa -> aaale: num10
