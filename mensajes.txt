@@ -16,7 +16,6 @@ elisa -> aaale: num 9
 elisa -> aaale: num10
 elisa -> aaale: num11
 elisa -> aaale: num12
-elisa -> aaale: num13
 elisa -> aaale: nu,14
 elisa -> aaale: num15
 elisa -> aaale: num16
