@@ -16,9 +16,10 @@ public class cliente2025 {
             System.out.println("Servidor: " + mensajeServidor);
 
             if (mensajeServidor.equals("No hay mensajes para ti.") ||
-                    mensajeServidor.contains("Usuarios registrados:")) {
-                mensajeServidor = lector.readLine();
-                System.out.println("Servidor: " + mensajeServidor);
+                    mensajeServidor.contains("Usuarios registrados:") ||
+                    mensajeServidor.contains("Opciones:") || // NUEVO: Para la paginación
+                    mensajeServidor.contains("--- Pagina ")) { // NUEVO: Para la paginación
+                // No se hace nada, el bucle continuará para mostrar la siguiente línea
             }
             if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
@@ -31,7 +32,8 @@ public class cliente2025 {
                     mensajeServidor.contains("¿Quieres jugar otra vez?") ||
                     mensajeServidor.contains("¿Quieres eliminar mensajes") ||
                     mensajeServidor.contains("Escribe el número del mensaje") ||
-                    mensajeServidor.contains("Estás seguro de borrar tu usuario")) {
+                    mensajeServidor.contains("Estás seguro de borrar tu usuario") ||
+                    mensajeServidor.contains("Opciones:")) {
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
