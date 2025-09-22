@@ -10,8 +10,17 @@ elisa -> aaale: numero 2
 elisa -> aaale: numero 3
 elisa -> aaale: numer 4
 elisa -> aaale: numero 5
-elisa -> aaale: numero 6
 elisa -> aaale: numero 7
 elisa -> aaale: num8
 elisa -> aaale: num 9
 elisa -> aaale: num10
+elisa -> aaale: num11
+elisa -> aaale: num12
+elisa -> aaale: num13
+elisa -> aaale: nu,14
+elisa -> aaale: num15
+elisa -> aaale: num16
+elisa -> aaale: num17
+elisa -> aaale: num18
+elisa -> aaale: num119
+elisa -> aaale: num20
