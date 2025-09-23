@@ -94,7 +94,9 @@ public class servidor2025 {
                         " - 'mensaje' para dejar un mensaje\n" +
                         " - 'leer' para ver tus mensajes\n" +
                         " - 'eliminar' para borrar mensajes\n" +
-                        " - 'bcuenta' para borrar tu usuario.");
+                        " - 'bcuenta' para borrar tu usuario." +
+                        " - 'bloquear' para bloquear un usuario\n" +
+                        " - 'desbloquear' para desbloquear un usuario.");
 
                 escritor.println("LISTO PARA COMANDO");
                 String accion = lector.readLine();
