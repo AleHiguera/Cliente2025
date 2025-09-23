@@ -86,7 +86,16 @@ public class servidor2025 {
                 }
             } else {
 
-                escritor.println("Escribe 'cerrar' para cerrar sesión, 'jugar' para comenzar el juego, 'usuarios' para ver la lista de usuarios, 'mensaje' para dejar un mensaje, 'leer' para ver tus mensajes, 'eliminar' para borrar mensajes, o 'bcuenta' para borrar tu usuario.");
+                escritor.println("Opciones:\n" +
+                        " - 'cerrar' para cerrar sesión\n" +
+                        " - 'jugar' para comenzar el juego\n" +
+                        " - 'usuarios' para ver la lista de usuarios\n" +
+                        " - 'mensaje' para dejar un mensaje\n" +
+                        " - 'leer' para ver tus mensajes\n" +
+                        " - 'eliminar' para borrar mensajes\n" +
+                        " - 'bcuenta' para borrar tu usuario.");
+
+                escritor.println("LISTO PARA COMANDO");
                 String accion = lector.readLine();
 
                 if (accion == null) {
@@ -218,7 +227,7 @@ public class servidor2025 {
                 }
 
                 escritor.println(opciones);
-
+                escritor.println("LISTO PARA COMANDO");
                 String accion = lector.readLine().trim();
 
                 if (accion.equalsIgnoreCase("cancelar")) {
