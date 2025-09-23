@@ -16,12 +16,21 @@ public class cliente2025 {
             System.out.println("Servidor: " + mensajeServidor);
 
             if (mensajeServidor.equals("No hay mensajes para ti.") ||
-                    mensajeServidor.contains("Usuarios registrados:") ||
-                    mensajeServidor.contains("Opciones:") ||
-                    mensajeServidor.contains("--- Pagina ")) {
-
+                    mensajeServidor.contains("Usuarios registrados:")) {
             }
-            if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
+
+            else if (mensajeServidor.contains("LISTO PARA COMANDO")) {
+                System.out.print("Tú: ");
+                String entradaUsuario = teclado.readLine();
+                escritor.println(entradaUsuario);
+
+                if (entradaUsuario.equalsIgnoreCase("salir")) {
+                    break;
+                }
+            }
+            // Mantenemos las condiciones existentes para las indicaciones de input.
+            // Estas son indicaciones directas del servidor para una respuesta inmediata.
+            else if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
                     mensajeServidor.contains("¿Quieres registrarte") ||
                     mensajeServidor.contains("Escribe 'cerrar'") ||
@@ -31,9 +40,7 @@ public class cliente2025 {
                     mensajeServidor.contains("Escribe tu intento #") ||
                     mensajeServidor.contains("¿Quieres jugar otra vez?") ||
                     mensajeServidor.contains("¿Quieres eliminar mensajes") ||
-                    mensajeServidor.contains("Escribe el número del mensaje") ||
-                    mensajeServidor.contains("Estás seguro de borrar tu usuario") ||
-                    mensajeServidor.contains("Opciones:")) {
+                    mensajeServidor.contains("Estás seguro de borrar tu usuario")) {
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
@@ -43,6 +50,7 @@ public class cliente2025 {
                     break;
                 }
             }
+
         }
         socket.close();
     }
