@@ -40,7 +40,9 @@ public class cliente2025 {
                     mensajeServidor.contains("Escribe tu intento #") ||
                     mensajeServidor.contains("¿Quieres jugar otra vez?") ||
                     mensajeServidor.contains("¿Quieres eliminar mensajes") ||
-                    mensajeServidor.contains("Estás seguro de borrar tu usuario")) {
+                    mensajeServidor.contains("Estás seguro de borrar tu usuario") ||
+                    mensajeServidor.contains("Qué usuario quieres bloquear") ||
+                    mensajeServidor.contains("Qué usuario deseas desbloquear")){
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
