@@ -6,6 +6,7 @@ import java.util.*;
 public class servidor2025 {
     private static final String ARCHIVO_USUARIOS = "cuentas.txt";
     private static final String ARCHIVO_MENSAJES = "mensajes.txt";
+    private static final String ARCHIVO_BLOQUEADOS = "bloqueados.txt";
 
     private static final int MENSAJES_POR_PAGINA = 10;
 
