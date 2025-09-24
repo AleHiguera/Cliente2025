@@ -17,6 +17,7 @@ public class cliente2025 {
 
             if (mensajeServidor.equals("No hay mensajes para ti.") ||
                     mensajeServidor.contains("Usuarios registrados:")) {
+
             }
 
             else if (mensajeServidor.contains("LISTO PARA COMANDO")) {
@@ -28,8 +29,7 @@ public class cliente2025 {
                     break;
                 }
             }
-            // Mantenemos las condiciones existentes para las indicaciones de input.
-            // Estas son indicaciones directas del servidor para una respuesta inmediata.
+
             else if (mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                     mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
                     mensajeServidor.contains("¿Quieres registrarte") ||
@@ -42,7 +42,7 @@ public class cliente2025 {
                     mensajeServidor.contains("¿Quieres eliminar mensajes") ||
                     mensajeServidor.contains("Estás seguro de borrar tu usuario") ||
                     mensajeServidor.contains("Qué usuario quieres bloquear") ||
-                    mensajeServidor.contains("Qué usuario deseas desbloquear")){
+                    mensajeServidor.contains("Qué usuario deseas desbloquear")) {
 
                 System.out.print("Tú: ");
                 String entradaUsuario = teclado.readLine();
