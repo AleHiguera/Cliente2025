@@ -6,7 +6,7 @@ import java.util.*;
 public class servidor2025 {
     private static final String ARCHIVO_USUARIOS = "cuentas.txt";
     private static final String ARCHIVO_MENSAJES = "mensajes.txt";
-    private static final String ARCHIVO_BLOQUEADOS = "bloqueados.txt";
+    private static final String ARCHIVO_BLOQUEADOS = "bloqueados.txt"; // Nuevo archivo para usuarios bloqueados
 
     private static final int MENSAJES_POR_PAGINA = 10;
 
@@ -94,7 +94,7 @@ public class servidor2025 {
                         " - 'mensaje' para dejar un mensaje\n" +
                         " - 'leer' para ver tus mensajes\n" +
                         " - 'eliminar' para borrar mensajes\n" +
-                        " - 'bcuenta' para borrar tu usuario." +
+                        " - 'bcuenta' para borrar tu usuario.\n" +
                         " - 'bloquear' para bloquear un usuario\n" +
                         " - 'desbloquear' para desbloquear un usuario.");
 
@@ -128,6 +128,10 @@ public class servidor2025 {
                         usuario = "";
                         sesionActiva = false;
                     }
+                } else if (accion.equalsIgnoreCase("bloquear")) {
+                    bloquearUsuario(escritor, lector, usuario);
+                } else if (accion.equalsIgnoreCase("desbloquear")) {
+                    desbloquearUsuario(escritor, lector, usuario);
                 } else {
                     escritor.println("Comando no reconocido.");
                 }
@@ -136,6 +140,106 @@ public class servidor2025 {
 
         cliente.close();
         server.close();
+    }
+
+    private static void bloquearUsuario(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
+        escritor.println("¿Qué usuario quieres bloquear o cancelar?");
+        String usuarioABloquear = lector.readLine().trim();
+
+        if (usuarioABloquear.equalsIgnoreCase("cancelar")) {
+            escritor.println("Acción cancelada.");
+            return;
+        }
+
+        if (usuarioABloquear.equalsIgnoreCase(usuario)) {
+            escritor.println("No puedes bloquearte a ti mismo.");
+            return;
+        }
+
+        if (!usuarioExiste(usuarioABloquear)) {
+            escritor.println("El usuario " + usuarioABloquear + " no existe.");
+            return;
+        }
+
+        if (estaBloqueado(usuario, usuarioABloquear)) {
+            escritor.println("Este usuario ya ha sido bloqueado por ti.");
+            return;
+        }
+
+        guardarBloqueo(usuario, usuarioABloquear);
+        escritor.println("Usuario " + usuarioABloquear + " bloqueado exitosamente.");
+    }
+
+    private static void desbloquearUsuario(PrintWriter escritor, BufferedReader lector, String usuario) throws IOException {
+        escritor.println("¿Qué usuario deseas desbloquear o cancelar?");
+        String usuarioADesbloquear = lector.readLine().trim();
+
+        if (usuarioADesbloquear.equalsIgnoreCase("cancelar")) {
+            escritor.println("Acción cancelada.");
+            return;
+        }
+
+        if (!usuarioExiste(usuarioADesbloquear)) {
+            escritor.println("El usuario " + usuarioADesbloquear + " no existe.");
+            return;
+        }
+
+        if (!estaBloqueado(usuario, usuarioADesbloquear)) {
+            escritor.println("Este usuario no necesita desbloquearse por que ya lo esta.");
+            return;
+        }
+
+        eliminarBloqueo(usuario, usuarioADesbloquear);
+        escritor.println("Usuario " + usuarioADesbloquear + " desbloqueado exitosamente.");
+    }
+
+    private static boolean estaBloqueado(String bloqueador, String bloqueado) throws IOException {
+        File archivo = new File(ARCHIVO_BLOQUEADOS);
+        if (!archivo.exists()) return false;
+
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split(":");
+                if (partes.length == 2 && partes[0].trim().equalsIgnoreCase(bloqueador) && partes[1].trim().equalsIgnoreCase(bloqueado)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void guardarBloqueo(String bloqueador, String bloqueado) throws IOException {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_BLOQUEADOS, true))) {
+            bw.write(bloqueador.trim() + ":" + bloqueado.trim());
+            bw.newLine();
+        }
+    }
+
+    private static void eliminarBloqueo(String bloqueador, String bloqueado) throws IOException {
+        File archivo = new File(ARCHIVO_BLOQUEADOS);
+        if (!archivo.exists()) return;
+
+        List<String> lineasRestantes = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = br.readLine()) != null) {
+                String[] partes = linea.split(":");
+                if (!(partes.length == 2 && partes[0].trim().equalsIgnoreCase(bloqueador) && partes[1].trim().equalsIgnoreCase(bloqueado))) {
+                    lineasRestantes.add(linea);
+                }
+            }
+        }
+        reescribirArchivo(ARCHIVO_BLOQUEADOS, lineasRestantes);
+    }
+
+    private static void reescribirArchivo(String nombreArchivo, List<String> lineas) throws IOException {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivo, false))) {
+            for (String linea : lineas) {
+                bw.write(linea);
+                bw.newLine();
+            }
+        }
     }
 
 
@@ -414,6 +518,16 @@ public class servidor2025 {
     private static void enviarMensaje(PrintWriter escritor, BufferedReader lector, String remitente) throws IOException {
         escritor.println("Escribe el nombre del usuario al que le dejarás un mensaje:");
         String destinatario = lector.readLine().trim();
+
+        if (estaBloqueado(remitente, destinatario)) {
+            escritor.println("No puedes enviar mensajes a " + destinatario + " porque lo tienes bloqueado.");
+            return;
+        }
+
+        if (estaBloqueado(destinatario, remitente)) {
+            escritor.println("No puedes enviar mensajes a " + destinatario + " porque te ha bloqueado.");
+            return;
+        }
 
         if (usuarioExiste(destinatario)) {
             escritor.println("Escribe el mensaje:");
