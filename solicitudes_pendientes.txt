@@ -1,0 +1,5 @@
+LISTA_SOLICITADA:elisa:aaale:
+LISTA_RECIBIDA:aaale:elisa:notita.txt
+ARCHIVO_SOLICITADO:elisa:aaale:notita.txt
+LISTA_RECIBIDA:aaale:elisa:notita.txt
+ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:notita.txt
