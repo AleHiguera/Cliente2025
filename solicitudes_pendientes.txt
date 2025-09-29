@@ -1,5 +1,13 @@
 LISTA_SOLICITADA:elisa:aaale:
 LISTA_RECIBIDA:aaale:elisa:notita.txt
 ARCHIVO_SOLICITADO:elisa:aaale:notita.txt
-LISTA_RECIBIDA:aaale:elisa:notita.txt
 ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:notita.txt
+LISTA_RECIBIDA:aaale:elisa:compras.txt,notita.txt
+LISTA_RECIBIDA:aaale:elisa:cancion.txt,compras.txt,notita.txt
+ARCHIVO_SOLICITADO:elisa:aaale:canciones.txt
+ARCHIVO_SOLICITADO:elisa:aaale:cnacion.txt
+ARCHIVO_SOLICITADO:elisa:aaale:cancion.txt
+ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:cancion.txt
+LISTA_RECIBIDA:aaale:elisa:cancion.txt,compras.txt,notita.txt
+ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:notita.txt
+ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:cancion.txt
