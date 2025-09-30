@@ -8,6 +8,4 @@ ARCHIVO_SOLICITADO:elisa:aaale:canciones.txt
 ARCHIVO_SOLICITADO:elisa:aaale:cnacion.txt
 ARCHIVO_SOLICITADO:elisa:aaale:cancion.txt
 ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:cancion.txt
-LISTA_RECIBIDA:aaale:elisa:cancion.txt,compras.txt,notita.txt
-ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:notita.txt
-ARCHIVO_PENDIENTE_DESCARGA:aaale:elisa:cancion.txt
+MENSAJE:alehi:aaale:holap
