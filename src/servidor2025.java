@@ -11,28 +11,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public class servidor2025 {
 
     private static final int PUERTO = 8080;
-    // Archivos de persistencia
     private static final String ARCHIVO_USUARIOS = "cuentas.txt";
     private static final String ARCHIVO_MENSAJES = "mensajes.txt";
     private static final String ARCHIVO_BLOQUEADOS = "bloqueados.txt";
     private static final String ARCHIVO_SOLICITUDES_PENDIENTES = "solicitudes_pendientes.txt";
-    // NUEVO: Carpeta para archivos pendientes de descarga en el servidor
     private static final String CARPETA_DESCARGAS_PENDIENTES_SERVIDOR = "descargas_pendientes_servidor";
-
-
-    // Mapa para gestionar clientes conectados: (nombreUsuario -> Handler)
-    // ConcurrentHashMap es seguro para concurrencia
     private static ConcurrentHashMap<String, Handler> clientesConectados = new ConcurrentHashMap<>();
-
     public static void main(String[] args) {
-        // Asegurarse de que los archivos y carpetas necesarios existan al iniciar el servidor
+
         try {
             new File(ARCHIVO_USUARIOS).createNewFile();
             new File(ARCHIVO_MENSAJES).createNewFile();
             new File(ARCHIVO_BLOQUEADOS).createNewFile();
             new File(ARCHIVO_SOLICITUDES_PENDIENTES).createNewFile();
 
-            // NUEVO: Crear la carpeta principal de descargas pendientes del servidor si no existe
             Path descargasPendientesPath = Paths.get(CARPETA_DESCARGAS_PENDIENTES_SERVIDOR);
             if (!Files.exists(descargasPendientesPath)) {
                 Files.createDirectories(descargasPendientesPath);
@@ -41,7 +33,7 @@ public class servidor2025 {
             System.out.println("Archivos y directorios de persistencia verificados/creados.");
         } catch (IOException e) {
             System.err.println("Error al crear archivos/directorios de persistencia: " + e.getMessage());
-            return; // Salir si no se pueden crear
+            return;
         }
 
         System.out.println("Servidor iniciado en el puerto " + PUERTO);
@@ -50,14 +42,13 @@ public class servidor2025 {
                 Socket clienteSocket = serverSocket.accept();
                 System.out.println("Nuevo cliente conectado: " + clienteSocket.getInetAddress().getHostAddress());
                 Handler handler = new Handler(clienteSocket);
-                new Thread(handler).start(); // Inicia un nuevo hilo para cada cliente
+                new Thread(handler).start();
             }
         } catch (IOException e) {
             System.err.println("Error del servidor: " + e.getMessage());
         }
     }
 
-    // Clase interna para manejar cada cliente en un hilo separado
     private static class Handler implements Runnable {
         private Socket clienteSocket;
         private PrintWriter escritor;
@@ -265,6 +256,8 @@ public class servidor2025 {
                 desbloquearUsuario();
             } else if (comando.startsWith("crear ")) {
                 escritor.println("CREAR_ARCHIVO_LOCAL:" + comando.substring(6).trim());
+            } else if (comando.startsWith("editar ")) { // NUEVO COMANDO
+                escritor.println("EDITAR_ARCHIVO_LOCAL:" + comando.substring(7).trim());
             } else if (comando.startsWith("ver ")) {
                 verArchivosOtroUsuario(comando.substring(4).trim().toLowerCase());
             } else if (comando.startsWith("pedir ")) {
@@ -275,12 +268,15 @@ public class servidor2025 {
                     escritor.println("Formato incorrecto. Usa 'pedir <usuario> <archivo_a_pedir>'.");
                 }
             }
-            // NUEVO: Comando del cliente para descargar un archivo que el servidor ha guardado para él
+
             else if (comando.startsWith("DESCARGAR_ARCHIVO_DE_SERVIDOR:")) {
                 String nombreArchivo = comando.substring("DESCARGAR_ARCHIVO_DE_SERVIDOR:".length()).trim();
                 enviarArchivoPendienteAlCliente(usuarioActual, nombreArchivo);
             }
-            // Manejo de la respuesta de lista de archivos del otro cliente
+
+            else if (comando.equalsIgnoreCase("SOLICITUD_OPCIONES")) {
+
+            }
             else if (comando.startsWith("RESPUESTA_ARCHIVOS:")) {
                 String[] partes = comando.split(":", 3);
                 if (partes.length == 3) {
@@ -289,46 +285,39 @@ public class servidor2025 {
                     Handler solicitanteHandler = clientesConectados.get(solicitante);
 
                     if (solicitanteHandler != null) {
-                        // El solicitante (A) está ONLINE: Retransmisión directa
+
                         solicitanteHandler.escritor.println("ARCHIVOS_DE:" + usuarioActual + ":" + listaArchivos);
                         System.out.println("Lista de archivos de " + usuarioActual + " enviada a " + solicitante + " (en línea).");
                     } else {
-                        // El solicitante (A) está OFFLINE: Registrar la lista como pendiente de entrega
-                        // TIPO:LISTA_RECIBIDA | DESTINO:solicitante | ORIGEN:usuarioActual | CONTENIDO:listaArchivos
                         registrarSolicitudPendiente("LISTA_RECIBIDA", solicitante, usuarioActual, listaArchivos);
                         System.out.println("Solicitante " + solicitante + " offline. Lista de archivos de " + usuarioActual + " guardada para su entrega posterior.");
                     }
                 }
             }
-            // NUEVO: El cliente inicia la transferencia de un archivo hacia otro cliente.
-            // Esto es el inicio del flujo donde el SERVIDOR puede decidir guardar o retransmitir.
             else if (comando.startsWith("INICIANDO_TRANSFERENCIA_ARCHIVO_DE_CLIENTE:")) {
                 String[] partes = comando.split(":", 3);
                 if (partes.length == 3) {
                     String destino = partes[1].toLowerCase();
                     String nombreArchivo = partes[2];
 
-                    // Configurar variables de estado del servidor para la transferencia
                     archivoDestinoTransferencia = destino;
                     nombreArchivoEnTransito = nombreArchivo;
 
                     Handler destinoHandler = clientesConectados.get(destino);
-                    if (destinoHandler != null) { // El destinatario está ONLINE: Iniciar retransmisión
+                    if (destinoHandler != null) {
                         destinoHandler.escritor.println("INICIANDO_TRANSFERENCIA_DE_USUARIO:" + usuarioActual + ":" + nombreArchivo);
                         System.out.println("Servidor: " + usuarioActual + " inició transferencia de '" + nombreArchivo + "' a " + destino + " (en línea).");
-                    } else { // El destinatario está OFFLINE: Iniciar guardado en la carpeta del servidor
+                    } else {
                         System.out.println("Servidor: " + destino + " está offline. Guardando '" + nombreArchivo + "' de " + usuarioActual + " en el servidor.");
                         try {
-                            // Asegurar que la subcarpeta del usuario destino exista en el servidor
                             Path userDownloadsPath = Paths.get(CARPETA_DESCARGAS_PENDIENTES_SERVIDOR, destino);
-                            Files.createDirectories(userDownloadsPath); // Crea la carpeta si no existe
+                            Files.createDirectories(userDownloadsPath);
 
                             File archivoGuardar = new File(userDownloadsPath.toFile(), nombreArchivo);
                             archivoEnEscrituraTemporal = new BufferedWriter(new FileWriter(archivoGuardar));
                         } catch (IOException e) {
                             System.err.println("Error al preparar archivo temporal para " + destino + ": " + e.getMessage());
                             escritor.println("ERROR: No se pudo preparar el archivo temporal en el servidor para " + destino + ".");
-                            // Reiniciar flags de transferencia del servidor en caso de error
                             nombreArchivoEnTransito = null;
                             archivoDestinoTransferencia = null;
                             archivoEnEscrituraTemporal = null;
@@ -337,19 +326,17 @@ public class servidor2025 {
                     }
                 }
             }
-            // No necesitamos manejar CONTENIDO_LINEA_ARCHIVO_DE_CLIENTE, etc., aquí con else if,
-            // porque se manejan en el primer bloque grande si nombreArchivoEnTransito no es null.
 
             else {
                 escritor.println("Comando no reconocido o no válido en este contexto.");
             }
-            // Mostrar opciones solo si no es un comando interno o de transferencia de archivo de cliente a cliente
-            if (!comando.startsWith("crear ") && !comando.startsWith("RESPUESTA_ARCHIVOS:") &&
+            if (!comando.startsWith("crear ") && !comando.startsWith("editar ") && !comando.startsWith("RESPUESTA_ARCHIVOS:") &&
                     !comando.startsWith("INICIANDO_TRANSFERENCIA_ARCHIVO_DE_CLIENTE:") &&
-                    !comando.startsWith("CONTENIDO_LINEA_ARCHIVO_DE_CLIENTE:") && // Estos se manejan al inicio
-                    !comando.startsWith("TRANSFERENCIA_COMPLETA_DE_CLIENTE:") &&  // Estos se manejan al inicio
-                    !comando.startsWith("ERROR_TRANSFERENCIA_DE_CLIENTE:") &&     // Estos se manejan al inicio
-                    !comando.startsWith("DESCARGAR_ARCHIVO_DE_SERVIDOR:")) { // Y este es nuevo
+                    !comando.startsWith("CONTENIDO_LINEA_ARCHIVO_DE_CLIENTE:") &&
+                    !comando.startsWith("TRANSFERENCIA_COMPLETA_DE_CLIENTE:") &&
+                    !comando.startsWith("ERROR_TRANSFERENCIA_DE_CLIENTE:") &&
+                    !comando.startsWith("DESCARGAR_ARCHIVO_DE_SERVIDOR:")) {
+
                 mostrarOpciones();
                 escritor.println("LISTO PARA COMANDO");
             }
@@ -358,7 +345,6 @@ public class servidor2025 {
         private void mostrarOpciones() {
             escritor.println("Opciones:");
             escritor.println(" - 'cerrar' para cerrar sesión");
-            // escritor.println(" - 'jugar' para comenzar el juego"); // Ejemplo, si tienes un juego
             escritor.println(" - 'usuarios' para ver la lista de usuarios");
             escritor.println(" - 'mensaje' para dejar un mensaje");
             escritor.println(" - 'leer' para ver tus mensajes");
@@ -367,9 +353,10 @@ public class servidor2025 {
             escritor.println(" - 'bloquear' para bloquear un usuario");
             escritor.println(" - 'desbloquear' para desbloquear un usuario.");
             escritor.println(" - 'crear <nombre>' para crear un archivo en tu carpeta 'mis_archivos'");
+            escritor.println(" - 'editar <nombre>' para modificar un archivo existente en tu carpeta 'mis_archivos'"); // NUEVO
             escritor.println(" - 'ver <usuario>' para ver los archivos de otro usuario");
             escritor.println(" - 'pedir <usuario> <archivo>' para solicitar un archivo a otro usuario");
-            escritor.println(" - 'descargar <nombre_archivo>' para descargar un archivo pendiente del servidor."); // NUEVO
+            escritor.println(" - 'descargar <nombre_archivo>' para descargar un archivo pendiente del servidor.");
         }
 
         private void mostrarUsuariosConectados() {
@@ -379,7 +366,7 @@ public class servidor2025 {
             }
             escritor.println("Usuarios conectados:");
             for (String user : clientesConectados.keySet()) {
-                if (!user.equalsIgnoreCase(usuarioActual)) { // No mostrarse a sí mismo
+                if (!user.equalsIgnoreCase(usuarioActual)) {
                     escritor.println(" - " + user);
                 }
             }
@@ -400,7 +387,7 @@ public class servidor2025 {
                 escritor.println("El usuario '" + destino + "' no existe.");
                 return;
             }
-            if (estaBloqueado(destino, usuarioActual)) { // Si DESTINO bloquea a ORIGEN (usuarioActual)
+            if (estaBloqueado(destino, usuarioActual)) {
                 escritor.println("No puedes enviar mensajes a " + destino + ". Te ha bloqueado.");
                 return;
             }
@@ -416,9 +403,9 @@ public class servidor2025 {
             if (destinoHandler != null) { // El destinatario está conectado
                 destinoHandler.escritor.println("MENSAJE_NUEVO_DIRECTO: De " + usuarioActual + ": " + mensaje);
                 escritor.println("Mensaje enviado a " + destino + ".");
-            } else { // El destinatario está desconectado
-                guardarMensajeOffline(usuarioActual, destino, mensaje); // Guarda el mensaje en mensajes.txt
-                registrarSolicitudPendiente("MENSAJE", destino, usuarioActual, mensaje); // Registra la notificación en solicitudes_pendientes.txt
+            } else {
+                guardarMensajeOffline(usuarioActual, destino, mensaje);
+                registrarSolicitudPendiente("MENSAJE", destino, usuarioActual, mensaje);
                 escritor.println("Usuario " + destino + " está offline. El mensaje se le entregará cuando se conecte.");
             }
         }
@@ -476,7 +463,7 @@ public class servidor2025 {
                 escritor.println("Escribe el nombre del usuario de quien quieres eliminar mensajes:");
                 String remitente = lector.readLine().toLowerCase();
                 for (String msg : mensajesActuales) {
-                    // Si el mensaje es para el usuario actual y viene del remitente especificado
+
                     if (msg.startsWith(usuarioActual + ":De " + remitente + ":")) {
                         encontrados = true;
                     } else {
@@ -510,7 +497,7 @@ public class servidor2025 {
                 eliminarUsuario(usuarioActual);
                 escritor.println("Tu cuenta ha sido eliminada. Conexión cerrada.");
                 System.out.println("Usuario " + usuarioActual + " ha borrado su cuenta.");
-                usuarioActual = null; // Para que el finally no intente cerrar sesión normalmente
+                usuarioActual = null;
                 return;
             } else {
                 escritor.println("Borrado de cuenta cancelado.");
@@ -532,8 +519,6 @@ public class servidor2025 {
                 escritor.println("El usuario '" + usuarioABloquear + "' no existe.");
                 return;
             }
-
-            // Verificar si ya está bloqueado
             if (yaEstaBloqueado(usuarioActual, usuarioABloquear)) {
                 escritor.println("Ya has bloqueado a '" + usuarioABloquear + "'.");
                 return;
@@ -554,8 +539,6 @@ public class servidor2025 {
                 escritor.println("El usuario '" + usuarioADesbloquear + "' no existe.");
                 return;
             }
-
-            // Verificar si no está bloqueado
             if (!yaEstaBloqueado(usuarioActual, usuarioADesbloquear)) {
                 escritor.println("No tienes bloqueado a '" + usuarioADesbloquear + "'.");
                 return;
@@ -567,7 +550,7 @@ public class servidor2025 {
 
         private void verArchivosOtroUsuario(String usuarioDestino) {
             if (usuarioDestino.equalsIgnoreCase(usuarioActual)) {
-                escritor.println("No puedes ver tus propios archivos con este comando. Usa 'crear' para crearlos o revisa tu carpeta local.");
+                escritor.println("No puedes ver tus propios archivos con este comando. Usa 'crear' o 'editar' para manipularlos.");
                 return;
             }
             if (!existeUsuario(usuarioDestino)) {
@@ -576,11 +559,10 @@ public class servidor2025 {
             }
 
             Handler destinoHandler = clientesConectados.get(usuarioDestino);
-            if (destinoHandler != null) { // El otro usuario está conectado
-                // Enviamos una solicitud interna al otro cliente para que nos envíe su lista
+            if (destinoHandler != null) {
                 destinoHandler.escritor.println("SOLICITUD_INTERNA:ENVIAR_MIS_ARCHIVOS:" + usuarioActual);
                 escritor.println("Solicitando lista de archivos a " + usuarioDestino + "...");
-            } else { // El otro usuario está desconectado
+            } else {
                 registrarSolicitudPendiente("LISTA_SOLICITADA", usuarioDestino, usuarioActual, ""); // Contenido vacío para listas
                 escritor.println("Usuario " + usuarioDestino + " está offline. Se le solicitarán sus archivos cuando se conecte.");
             }
@@ -595,33 +577,31 @@ public class servidor2025 {
                 escritor.println("El usuario '" + usuarioDestino + "' no existe.");
                 return;
             }
-            // NO se necesita verificar si el destino está conectado aquí. El flujo INICIANDO_TRANSFERENCIA_ARCHIVO_DE_CLIENTE lo maneja.
-            // Si el destino está offline, el servidor guardará el archivo y notificará al destino.
 
-            // Se envía una solicitud interna al otro cliente para que nos envíe el archivo
-            // El cliente lo manejará con enviarArchivoAlServidorParaRetransmitir
             Handler destinoHandler = clientesConectados.get(usuarioDestino);
-            if (destinoHandler != null) { // El que tiene el archivo está online
+            if (destinoHandler != null) {
                 destinoHandler.escritor.println("SOLICITUD_INTERNA:ENVIAR_ARCHIVO:" + usuarioActual + ":" + nombreArchivo);
                 escritor.println("Solicitando archivo '" + nombreArchivo + "' a " + usuarioDestino + "...");
-            } else { // El que tiene el archivo está offline
-                // En este caso, el servidor registra una solicitud al QUE TIENE el archivo (usuarioDestino)
-                // para que cuando se conecte, envíe el archivo al SOLICITANTE (usuarioActual).
+            } else {
                 registrarSolicitudPendiente("ARCHIVO_SOLICITADO", usuarioDestino, usuarioActual, nombreArchivo);
                 escritor.println("Usuario " + usuarioDestino + " está offline. Se le solicitará el archivo cuando se conecte para enviártelo.");
             }
         }
 
-        // NUEVO: Envía un archivo pendiente desde el almacén del servidor al cliente
         private void enviarArchivoPendienteAlCliente(String usuario, String nombreArchivo) {
             Path filePath = Paths.get(CARPETA_DESCARGAS_PENDIENTES_SERVIDOR, usuario, nombreArchivo);
 
             if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
                 escritor.println("ERROR_TRANSFERENCIA_DE_SERVIDOR: El archivo '" + nombreArchivo + "' no se encontró en tus descargas pendientes.");
                 System.err.println("Servidor: Archivo pendiente no encontrado para " + usuario + ": " + nombreArchivo);
-                // También, limpia la solicitud pendiente si no se encontró el archivo
                 eliminarSolicitudPendienteEspecifica("ARCHIVO_PENDIENTE_DESCARGA", usuario, "", nombreArchivo);
                 return;
+            }
+
+            String origenReal = obtenerOrigenDeSolicitudPendiente("ARCHIVO_PENDIENTE_DESCARGA", usuario, nombreArchivo);
+
+            if (origenReal == null) {
+                System.err.println("Advertencia: Se encontró el archivo físico '" + nombreArchivo + "', pero no la solicitud pendiente en " + ARCHIVO_SOLICITUDES_PENDIENTES + " para el usuario " + usuario + ".");
             }
 
             try (BufferedReader fileReader = new BufferedReader(new FileReader(filePath.toFile()))) {
@@ -633,18 +613,45 @@ public class servidor2025 {
                 escritor.println("TRANSFERENCIA_COMPLETA_DE_SERVIDOR:");
                 System.out.println("Servidor: Archivo '" + nombreArchivo + "' enviado desde pendientes a " + usuario + ".");
 
-                // Limpiar después de una descarga exitosa
-                Files.deleteIfExists(filePath); // Eliminar el archivo del servidor
-                eliminarSolicitudPendienteEspecifica("ARCHIVO_PENDIENTE_DESCARGA", usuario, "", nombreArchivo); // Eliminar la notificación
+                synchronized (servidor2025.class) {
+
+                    if (Files.deleteIfExists(filePath)) {
+                        System.out.println("Servidor: Archivo pendiente '" + nombreArchivo + "' eliminado del almacén.");
+                    } else {
+                        System.err.println("Advertencia: No se pudo eliminar el archivo pendiente '" + nombreArchivo + "' del almacén.");
+                    }
+
+                    if (origenReal != null) {
+                        eliminarSolicitudPendienteEspecifica("ARCHIVO_PENDIENTE_DESCARGA", usuario, origenReal, nombreArchivo);
+                    } else {
+                        System.err.println("Advertencia: No se pudo eliminar la solicitud pendiente para '" + nombreArchivo + "' (origen no encontrado).");
+                    }
+                }
 
             } catch (IOException e) {
+
                 System.err.println("Error al enviar archivo pendiente '" + nombreArchivo + "' a " + usuario + ": " + e.getMessage());
-                escritor.println("ERROR_TRANSFERENCIA_DE_SERVIDOR: Error al leer el archivo pendiente.");
+                e.printStackTrace();
+                escritor.println("ERROR_TRANSFERENCIA_DE_SERVIDOR: Error al leer o procesar el archivo pendiente en el servidor.");
             }
         }
 
+        private synchronized String obtenerOrigenDeSolicitudPendiente(String tipo, String destino, String contenido) {
+            try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_SOLICITUDES_PENDIENTES))) {
+                String linea;
+                while ((linea = br.readLine()) != null) {
 
-        // --- Métodos de Persistencia (Todos son synchronized para seguridad de archivos) ---
+                    String[] partes = linea.split(":", 4);
+                    if (partes.length >= 4 && partes[0].equalsIgnoreCase(tipo) &&
+                            partes[1].equalsIgnoreCase(destino) && partes[3].equalsIgnoreCase(contenido)) {
+                        return partes[2];
+                    }
+                }
+            } catch (IOException e) {
+                System.err.println("Error al buscar origen de solicitud pendiente: " + e.getMessage());
+            }
+            return null;
+        }
 
         private synchronized boolean existeUsuario(String usuario) {
             try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_USUARIOS))) {
@@ -704,11 +711,10 @@ public class servidor2025 {
             } catch (IOException e) {
                 System.err.println("Error al reescribir archivo de usuarios: " + e.getMessage());
             }
-            // También eliminar mensajes, bloqueos, solicitudes pendientes y archivos de descarga relacionados con este usuario
             eliminarMensajesDeUsuario(usuarioAEliminar);
             eliminarBloqueosDeUsuario(usuarioAEliminar);
             eliminarSolicitudesPendientesDeUsuario(usuarioAEliminar);
-            eliminarCarpetaDescargasPendientes(usuarioAEliminar); // NUEVO
+            eliminarCarpetaDescargasPendientes(usuarioAEliminar);
         }
 
         private synchronized void guardarMensajeOffline(String origen, String destino, String mensaje) {
@@ -740,7 +746,6 @@ public class servidor2025 {
             try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_MENSAJES))) {
                 String linea;
                 while ((linea = br.readLine()) != null) {
-                    // Si no es un mensaje PARA el usuario a eliminar ni un mensaje DE el usuario a eliminar
                     if (!linea.startsWith(usuarioAEliminar + ":") && !linea.contains(":De " + usuarioAEliminar + ":")) {
                         lineasRestantes.add(linea);
                     }
@@ -822,7 +827,6 @@ public class servidor2025 {
             try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_BLOQUEADOS))) {
                 String linea;
                 while ((linea = br.readLine()) != null) {
-                    // Si el usuario no es el bloqueador ni el bloqueado
                     String[] partes = linea.split(":");
                     if (partes.length == 2 && !partes[0].equalsIgnoreCase(usuarioAEliminar) && !partes[1].equalsIgnoreCase(usuarioAEliminar)) {
                         lineasRestantes.add(linea);
@@ -841,28 +845,26 @@ public class servidor2025 {
             }
         }
 
-        // --- Manejo de Solicitudes Pendientes (para usuarios offline) ---
-
-        // Método auxiliar para registrar solicitudes pendientes
         private void registrarSolicitudPendiente(String tipo, String destino, String origen, String contenido) {
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_SOLICITUDES_PENDIENTES, true))) { // true para append
-                // Formato de guardado: TIPO:DESTINO:ORIGEN:CONTENIDO
+
                 bw.write(tipo + ":" + destino.toLowerCase() + ":" + origen.toLowerCase() + ":" + contenido);
                 bw.newLine();
             } catch (IOException e) {
                 System.err.println("Error al registrar solicitud pendiente: " + e.getMessage());
             }
         }
-
-        // NUEVO: Eliminar una solicitud pendiente específica (útil después de descargar un archivo)
         private synchronized void eliminarSolicitudPendienteEspecifica(String tipo, String destino, String origen, String contenido) {
             List<String> lineasRestantes = new ArrayList<>();
             boolean eliminada = false;
+
+            String lineaABuscar = tipo + ":" + destino.toLowerCase() + ":" + origen.toLowerCase() + ":" + contenido;
+
             try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_SOLICITUDES_PENDIENTES))) {
                 String linea;
                 while ((linea = br.readLine()) != null) {
-                    // Solo elimina la primera ocurrencia que coincida
-                    if (!eliminada && linea.equalsIgnoreCase(tipo + ":" + destino.toLowerCase() + ":" + origen.toLowerCase() + ":" + contenido)) {
+
+                    if (!eliminada && linea.equalsIgnoreCase(lineaABuscar)) {
                         eliminada = true;
                     } else {
                         lineasRestantes.add(linea);
@@ -882,20 +884,17 @@ public class servidor2025 {
                 }
             }
         }
-
-        // Elimina las solicitudes pendientes donde el usuario es el origen o el destino
         private synchronized void eliminarSolicitudesPendientesDeUsuario(String usuarioAEliminar) {
             List<String> lineasRestantes = new ArrayList<>();
             try (BufferedReader br = new BufferedReader(new FileReader(ARCHIVO_SOLICITUDES_PENDIENTES))) {
                 String linea;
                 while ((linea = br.readLine()) != null) {
-                    String[] partes = linea.split(":", 4); // Split con límite para el contenido
+                    String[] partes = linea.split(":", 4);
                     if (partes.length >= 4) {
-                        // Si el usuario no es el DESTINO ni el ORIGEN de la solicitud
                         if (!partes[1].equalsIgnoreCase(usuarioAEliminar) && !partes[2].equalsIgnoreCase(usuarioAEliminar)) {
                             lineasRestantes.add(linea);
                         }
-                    } else { // Si la línea está mal formateada, la conservamos por seguridad o la ignoramos si no es crucial
+                    } else {
                         lineasRestantes.add(linea);
                     }
                 }
@@ -912,7 +911,6 @@ public class servidor2025 {
             }
         }
 
-        // Procesa y retransmite mensajes/solicitudes pendientes al usuario que acaba de iniciar sesión
         private synchronized void procesarSolicitudesPendientes(String usuario) {
             List<String> lineas = new ArrayList<>();
             List<String> lineasRestantes = new ArrayList<>();
@@ -955,25 +953,25 @@ public class servidor2025 {
                     } else if (partes[0].equalsIgnoreCase("LISTA_RECIBIDA")) {
                         escritor.println("ARCHIVOS_DE:" + partes[2] + ":" + partes[3]);
                         encontradas = true;
-                        // 5. NUEVO: Notificación de archivo que el servidor guardó para el cliente
+
                     } else if (partes[0].equalsIgnoreCase("ARCHIVO_PENDIENTE_DESCARGA")) {
-                        escritor.println("NOTIFICACION_ARCHIVO_PENDIENTE: Tienes un archivo pendiente: '" + partes[3] + "' de " + partes[2] + ".");
+
+                        escritor.println("NOTIFICACION_ARCHIVO_PENDIENTE: Tienes un archivo pendiente: '" + partes[3] + "' de " + partes[2] + "."); // partes[2] es el origen
                         encontradas = true;
-                        // OJO: No se elimina aquí la solicitud de inmediato. Se elimina cuando el cliente lo descarga.
-                        // La línea se añade a lineasRestantes para que se conserve hasta que el cliente decida descargarlo.
-                        lineasRestantes.add(linea); // Conservar esta línea para reescribir, no se elimina todavía
-                        continue; // No añadirla a lineasRestantes de nuevo al final del loop
+                        lineasRestantes.add(linea); // Conservar esta línea para reescribir
+                        continue;
                     }
                 }
-                lineasRestantes.add(linea); // Conservar las líneas que no son para este usuario o que son notificaciones pendientes de descarga
+
+                if (!lineasRestantes.contains(linea)) {
+                    lineasRestantes.add(linea);
+                }
             }
 
             if (encontradas) {
-                // Reescribe el archivo de solicitudes pendientes sin las que ya fueron procesadas
-                // (excepto las NOTIFICACION_ARCHIVO_PENDIENTE que se procesan al descargar)
                 try (BufferedWriter bw = new BufferedWriter(new FileWriter(ARCHIVO_SOLICITUDES_PENDIENTES, false))) {
-                    for (String linea : lineasRestantes) {
-                        bw.write(linea);
+                    for (String l : lineasRestantes) {
+                        bw.write(l);
                         bw.newLine();
                     }
                 } catch (IOException e) {
@@ -982,7 +980,6 @@ public class servidor2025 {
             }
         }
 
-        // NUEVO: Eliminar la carpeta de descargas pendientes de un usuario
         private void eliminarCarpetaDescargasPendientes(String usuarioAEliminar) {
             Path userDownloadsPath = Paths.get(CARPETA_DESCARGAS_PENDIENTES_SERVIDOR, usuarioAEliminar);
             if (Files.exists(userDownloadsPath)) {
@@ -1004,11 +1001,10 @@ public class servidor2025 {
                 clientesConectados.remove(usuarioActual);
                 System.out.println("Usuario " + usuarioActual + " ha cerrado sesión.");
             }
-            // Asegurarse de cerrar el archivo temporal si estaba en medio de una transferencia
             if (archivoEnEscrituraTemporal != null) {
                 try {
                     archivoEnEscrituraTemporal.close();
-                    // Opcional: eliminar el archivo parcial si el cliente se desconectó a mitad de envío
+
                     Path archivoParcial = Paths.get(CARPETA_DESCARGAS_PENDIENTES_SERVIDOR, archivoDestinoTransferencia, nombreArchivoEnTransito);
                     try { Files.deleteIfExists(archivoParcial); } catch (IOException e) { System.err.println("Error al eliminar archivo parcial tras desconexión: " + e.getMessage()); }
                 } catch (IOException e) {
