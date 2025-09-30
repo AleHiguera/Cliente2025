@@ -5,9 +5,8 @@ import java.util.List;
 
 public class cliente2025 {
 
-    // Se inicializa vacío, se llenará tras el login
     private static String usuarioActual = null;
-    // La carpeta se construirá como "mis_archivos_" + usuarioActual
+
     private static String MI_CARPETA_COMPARTIDA = null;
 
     public static void main(String[] args) throws IOException {
@@ -30,19 +29,16 @@ public class cliente2025 {
         try {
             while ((mensajeServidor = lector.readLine()) != null) {
 
-                // *** LÓGICA CLAVE: DETECTAR INICIO DE SESIÓN EXITOSO PARA INICIALIZAR LA CARPETA ***
                 if ((mensajeServidor.contains("Firma exitosa. ¡Bienvenido ") ||
                         mensajeServidor.contains("Registro exitoso. Ahora tu sesión está activa.")) &&
                         usuarioActual == null) {
 
                     String[] partes = mensajeServidor.split(" ");
-                    // Asume que el nombre de usuario es la última palabra sin puntuación
                     String nombreUsuario = partes[partes.length - 1].replace("!", "").replace(".", "");
 
                     usuarioActual = nombreUsuario.toLowerCase(); // Asegurarse que esté en minúsculas
                     MI_CARPETA_COMPARTIDA = "mis_archivos_" + usuarioActual;
 
-                    // Crear la carpeta personalizada si no existe
                     File sharedDir = new File(MI_CARPETA_COMPARTIDA);
                     if (!sharedDir.exists()) {
                         sharedDir.mkdirs();
@@ -52,8 +48,6 @@ public class cliente2025 {
                     }
                 }
 
-                // --- MANEJO DE COMANDOS INTERNOS DEL SERVIDOR (AUTOMÁTICOS) ---
-                // Solo procesar solicitudes internas si el usuario ya ha iniciado sesión
                 if (usuarioActual != null && MI_CARPETA_COMPARTIDA != null && mensajeServidor.startsWith("SOLICITUD_INTERNA:")) {
                     String[] partes = mensajeServidor.split(":", 3);
                     String tipoSolicitud = partes[1];
@@ -71,10 +65,9 @@ public class cliente2025 {
                         System.out.println("[INFO] Enviando archivo '" + nombreArchivo + "' de '" + MI_CARPETA_COMPARTIDA + "' a " + solicitanteOriginal + "...");
                         enviarArchivoAlServidorParaRetransmitir(escritor, nombreArchivo, solicitanteOriginal, MI_CARPETA_COMPARTIDA);
                     }
-                    continue; // Ya se procesó un comando interno, esperar el siguiente.
+                    continue;
                 }
 
-                // --- Lógica de Transferencia de Archivos (desde OTRO USUARIO vía servidor) ---
                 if (mensajeServidor.startsWith("INICIANDO_TRANSFERENCIA_DE_USUARIO:")) {
                     String[] partes = mensajeServidor.split(":", 3);
                     remitenteArchivo = partes[1];
@@ -104,14 +97,14 @@ public class cliente2025 {
                         remitenteArchivo = "";
                         nombreArchivoEnTransferencia = "";
                     }
-                    continue; // Ya se procesó una línea de transferencia, esperar la siguiente.
+                    continue;
                 }
 
-                // --- NUEVO: Lógica de Transferencia de Archivos (desde el SERVIDOR) ---
+
                 if (mensajeServidor.startsWith("INICIANDO_TRANSFERENCIA_DE_SERVIDOR:")) {
-                    String[] partes = mensajeServidor.split(":", 2); // Servidor solo envía nombre de archivo
+                    String[] partes = mensajeServidor.split(":", 2);
                     nombreArchivoEnTransferenciaDesdeServidor = partes[1];
-                    System.out.println("Servidor: " + mensajeServidor); // Mostrar el mensaje original del servidor
+                    System.out.println("Servidor: " + mensajeServidor);
                     System.out.println("Transferencia de '" + nombreArchivoEnTransferenciaDesdeServidor + "' desde el servidor iniciada...");
                     enModoTransferenciaDesdeServidor = true;
                     contenidoArchivoDesdeServidor.clear();
@@ -127,7 +120,7 @@ public class cliente2025 {
                             System.err.println("Error: Formato de línea de contenido inesperado desde servidor: " + mensajeServidor);
                         }
                     } else if (mensajeServidor.startsWith("TRANSFERENCIA_COMPLETA_DE_SERVIDOR:")) {
-                        // Aquí guardamos el archivo en la carpeta PERSONAL del usuario, no en la raíz.
+
                         guardarArchivoEnCarpetaCompartida(nombreArchivoEnTransferenciaDesdeServidor, contenidoArchivoDesdeServidor);
                         System.out.println("Transferencia completada. Archivo guardado como '" + nombreArchivoEnTransferenciaDesdeServidor + "' en tu carpeta compartida: '" + MI_CARPETA_COMPARTIDA + "'.");
                         enModoTransferenciaDesdeServidor = false;
@@ -137,7 +130,7 @@ public class cliente2025 {
                         enModoTransferenciaDesdeServidor = false;
                         nombreArchivoEnTransferenciaDesdeServidor = "";
                     }
-                    continue; // Ya se procesó una línea de transferencia, esperar la siguiente.
+                    continue;
                 }
 
 
@@ -171,7 +164,7 @@ public class cliente2025 {
                     System.out.println("---------------------");
                     continue;
                 }
-                // NUEVO: Notificación de archivo pendiente para descargar desde el servidor
+
                 if (mensajeServidor.startsWith("NOTIFICACION_ARCHIVO_PENDIENTE:")) {
                     System.out.println("\n--- ARCHIVO PENDIENTE DE DESCARGA ---");
                     System.out.println(mensajeServidor.substring("NOTIFICACION_ARCHIVO_PENDIENTE:".length()));
@@ -203,15 +196,52 @@ public class cliente2025 {
                             System.err.println("Error al crear el archivo local en '" + MI_CARPETA_COMPARTIDA + "': " + e.getMessage());
                         }
                     }
-                    System.out.println("LISTO PARA COMANDO"); // Siempre enviar "LISTO PARA COMANDO" después de una acción local
+                    escritor.println("SOLICITUD_OPCIONES"); // Notificar al servidor para refrescar opciones/estado
                     continue;
                 }
 
-                // --- Lógica Normal de Interacción ---
+                // --- Lógica de Comando para Editar Archivo (CLIENTE LOCAL) ---
+                if (usuarioActual != null && MI_CARPETA_COMPARTIDA != null && mensajeServidor.startsWith("EDITAR_ARCHIVO_LOCAL:")) {
+                    String nombreArchivo = mensajeServidor.substring("EDITAR_ARCHIVO_LOCAL:".length());
+                    if (!nombreArchivo.toLowerCase().endsWith(".txt")) {
+                        nombreArchivo += ".txt";
+                    }
+                    File archivoAEditar = new File(MI_CARPETA_COMPARTIDA, nombreArchivo);
+
+                    if (!archivoAEditar.exists()) {
+                        System.out.println("El archivo '" + nombreArchivo + "' no existe en tu carpeta '" + MI_CARPETA_COMPARTIDA + "'. Usa 'crear' si quieres uno nuevo.");
+                    } else {
+                        System.out.println("--- Contenido Actual de '" + nombreArchivo + "' ---");
+                        try (BufferedReader br = new BufferedReader(new FileReader(archivoAEditar))) {
+                            String linea;
+                            while ((linea = br.readLine()) != null) {
+                                System.out.println(linea);
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Error al leer el archivo para edición: " + e.getMessage());
+                            escritor.println("SOLICITUD_OPCIONES");
+                            continue;
+                        }
+
+                        System.out.println("--- Introduce el NUEVO contenido (sobrescribirá el anterior. Termina con una línea vacía): ---");
+                        try (BufferedWriter bw = new BufferedWriter(new FileWriter(archivoAEditar, false))) { // false para sobrescribir
+                            String lineaContenido;
+                            while (!(lineaContenido = teclado.readLine()).isEmpty()) {
+                                bw.write(lineaContenido);
+                                bw.newLine();
+                            }
+                            System.out.println("Archivo '" + nombreArchivo + "' modificado y guardado en '" + MI_CARPETA_COMPARTIDA + "'.");
+                        } catch (IOException e) {
+                            System.err.println("Error al escribir en el archivo local: " + e.getMessage());
+                        }
+                    }
+                    escritor.println("SOLICITUD_OPCIONES"); // Notificar al servidor para refrescar opciones/estado
+                    continue;
+                }
+
+
                 System.out.println("Servidor: " + mensajeServidor);
 
-                // --- Determinación de si se necesita entrada del usuario ---
-                // Se agregó la condición `mensajeServidor.contains("Opción no válida")` para el fix del loop de inicio
                 if (mensajeServidor.contains("LISTO PARA COMANDO") ||
                         mensajeServidor.contains("Escribe tu nombre de usuario:") ||
                         mensajeServidor.contains("Escribe tu PIN de 4 digitos:") ||
@@ -225,7 +255,7 @@ public class cliente2025 {
                         mensajeServidor.contains("Estás seguro de borrar tu usuario") ||
                         mensajeServidor.contains("Qué usuario quieres bloquear") ||
                         mensajeServidor.contains("Qué usuario deseas desbloquear") ||
-                        mensajeServidor.contains("Opción no válida")) { // <<-- FIX DEL DEADLOCK DE INICIO
+                        mensajeServidor.contains("Opción no válida")) {
 
                     System.out.print("Tú: ");
                     String entradaUsuario = teclado.readLine();
@@ -235,15 +265,12 @@ public class cliente2025 {
                         break;
                     }
 
-                    // NUEVA LÓGICA: Procesar el comando 'descargar' LOCALMENTE antes de enviarlo
+                    // LÓGICA: Procesar el comando 'descargar' LOCALMENTE antes de enviarlo
                     if (entradaUsuario.toLowerCase().startsWith("descargar ")) {
                         String nombreArchivoADescargar = entradaUsuario.substring(10).trim();
                         // El cliente envía el comando 'DESCARGAR_ARCHIVO_DE_SERVIDOR' al servidor
-                        // para que el servidor inicie la transferencia desde su almacén.
                         escritor.println("DESCARGAR_ARCHIVO_DE_SERVIDOR:" + nombreArchivoADescargar);
                         System.out.println("Solicitando al servidor el archivo '" + nombreArchivoADescargar + "'...");
-                        // No es necesario un continue aquí, el bucle principal continuará esperando el siguiente mensaje del servidor.
-                        // El servidor responderá con INICIANDO_TRANSFERENCIA_DE_SERVIDOR si todo va bien.
                     } else {
                         // Si no es un comando 'descargar', se envía el comando tal cual al servidor.
                         escritor.println(entradaUsuario);
@@ -288,13 +315,12 @@ public class cliente2025 {
         }
         return lista.toString();
     }
-
     private static void enviarArchivoAlServidorParaRetransmitir(PrintWriter escritor, String nombreArchivo, String solicitante, String carpetaCompartida) {
         File archivoAEnviar = new File(carpetaCompartida, nombreArchivo);
 
         if (!archivoAEnviar.exists() || !archivoAEnviar.isFile() || !nombreArchivo.toLowerCase().endsWith(".txt")) {
+
             escritor.println("ERROR_TRANSFERENCIA_DE_CLIENTE:" + solicitante + ":El archivo '" + nombreArchivo + "' no existe o no es un archivo de texto en mi carpeta compartida.");
-            System.err.println("Error: No se puede enviar el archivo '" + nombreArchivo + "'. No existe o no es un .txt en '" + carpetaCompartida + "'.");
             return;
         }
 
@@ -307,19 +333,13 @@ public class cliente2025 {
             escritor.println("TRANSFERENCIA_COMPLETA_DE_CLIENTE:" + solicitante);
             System.out.println("Archivo '" + nombreArchivo + "' enviado al servidor para " + solicitante + " desde '" + carpetaCompartida + "'.");
         } catch (IOException e) {
-            System.err.println("Error al leer y enviar el archivo " + nombreArchivo + ": " + e.getMessage());
+
             escritor.println("ERROR_TRANSFERENCIA_DE_CLIENTE:" + solicitante + ":Error de lectura al enviar el archivo.");
         }
     }
 
-    /**
-     * Guarda el contenido de un archivo recibido (DE OTRO CLIENTE vía servidor)
-     * en el directorio raíz de ejecución del cliente.
-     * @param nombreArchivo El nombre del archivo a guardar.
-     * @param contenido La lista de líneas de texto del archivo.
-     */
     private static void guardarArchivoLocal(String nombreArchivo, List<String> contenido) {
-        // Los archivos descargados de otros clientes se guardarán en el directorio raíz del cliente (donde se ejecuta).
+
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivo))) {
             for (String linea : contenido) {
                 bw.write(linea);
@@ -329,13 +349,6 @@ public class cliente2025 {
             System.err.println("Error al guardar el archivo local " + nombreArchivo + ": " + e.getMessage());
         }
     }
-
-    /**
-     * NUEVO: Guarda el contenido de un archivo recibido DEL SERVIDOR
-     * en la carpeta compartida personalizada del cliente (mis_archivos_usuario).
-     * @param nombreArchivo El nombre del archivo a guardar.
-     * @param contenido La lista de líneas de texto del archivo.
-     */
     private static void guardarArchivoEnCarpetaCompartida(String nombreArchivo, List<String> contenido) {
         if (MI_CARPETA_COMPARTIDA == null || usuarioActual == null) {
             System.err.println("Error: La carpeta compartida del usuario no está configurada. No se pudo guardar el archivo.");
